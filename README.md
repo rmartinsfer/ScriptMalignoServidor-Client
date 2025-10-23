@@ -258,6 +258,222 @@ O sistema permite comparar:
 3. **Teste de número inexistente**: Verificar comportamento com --missing
 4. **Comparação de performance**: Distribuído vs sequencial
 
+## 🌐 Teste em Ambiente Real (Múltiplas Máquinas)
+
+### **Preparação para Teste em Rede Local**
+
+#### **Passo 1: Preparar cada máquina da rede**
+
+Em **CADA máquina** da rede local, execute:
+
+```bash
+# 1. Copiar o projeto para a máquina
+scp -r ppd-java/ usuario@IP_DA_MAQUINA:/home/usuario/
+
+# 2. Acessar a máquina
+ssh usuario@IP_DA_MAQUINA
+
+# 3. Compilar o projeto
+cd ppd-java
+javac -d out src/distributed/*.java
+
+# 4. Descobrir o IP da máquina
+ifconfig  # Linux/macOS
+# ou
+ipconfig  # Windows
+
+# 5. Executar ReceptorServer
+java -cp out distributed.ReceptorServer 0.0.0.0 12345
+```
+
+#### **Passo 2: Anotar IPs das máquinas**
+
+Exemplo de IPs típicos em rede local:
+- **Máquina 1**: `192.168.1.100`
+- **Máquina 2**: `192.168.1.101`
+- **Máquina 3**: `192.168.1.102`
+- **Máquina 4**: `192.168.1.103`
+
+#### **Passo 3: Executar teste distribuído**
+
+Em **UMA máquina** (pode ser qualquer uma), execute:
+
+```bash
+# Teste com IPs reais
+./teste_automatico.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345
+
+# Ou com mais máquinas
+./teste_automatico.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345 192.168.1.103:12345
+```
+
+### **Logs Esperados em Ambiente Real**
+
+```
+[D] 2025-10-23 10:30:00 — Vetor gerado: 1000000 elementos; alvo escolhido (pos=523543) = 78
+[D] 2025-10-23 10:30:00 — Conectado a 192.168.1.100:12345
+[D] 2025-10-23 10:30:00 — Conectado a 192.168.1.101:12345
+[D] 2025-10-23 10:30:00 — Conectado a 192.168.1.102:12345
+[D] 2025-10-23 10:30:00 — — Rodada EXISTENTE — alvo=78
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.100:12345: parcial=1719
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.101:12345: parcial=1676
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.102:12345: parcial=1676
+[D] 2025-10-23 10:30:01 — TOTAL (EXISTENTE): 5071 ocorrências. Tempo distribuído: 61,84 ms
+[D] 2025-10-23 10:30:01 — Tempo sequencial local: 2,14 ms (resultado=5071)
+[D] 2025-10-23 10:30:01 — — Rodada INEXISTENTE — alvo=111
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.100:12345: parcial=0
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.101:12345: parcial=0
+[D] 2025-10-23 10:30:01 — Resposta de 192.168.1.102:12345: parcial=0
+[D] 2025-10-23 10:30:01 — TOTAL (INEXISTENTE): 0 ocorrências. Tempo distribuído: 41,27 ms
+[D] 2025-10-23 10:30:01 — Tempo sequencial local: 3,23 ms (resultado=0)
+[D] 2025-10-23 10:30:01 — Conexão fechada: 192.168.1.100:12345
+[D] 2025-10-23 10:30:01 — Conexão fechada: 192.168.1.101:12345
+[D] 2025-10-23 10:30:01 — Conexão fechada: 192.168.1.102:12345
+[D] 2025-10-23 10:30:01 — Encerramento enviado para todos os R e conexões fechadas.
+```
+
+### **Scripts para Ambiente Real**
+
+#### **Script de Preparação (para cada máquina)**
+```bash
+#!/bin/bash
+# preparar_maquina.sh
+
+echo "🔧 Preparando máquina para teste distribuído..."
+
+# Compilar projeto
+echo "📦 Compilando projeto..."
+javac -d out src/distributed/*.java
+
+# Descobrir IP
+echo "🔍 Descobrindo IP da máquina..."
+ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1
+
+# Iniciar ReceptorServer
+echo "🚀 Iniciando ReceptorServer..."
+java -cp out distributed.ReceptorServer 0.0.0.0 12345
+```
+
+#### **Script de Teste (para máquina coordenadora)**
+```bash
+#!/bin/bash
+# teste_rede_real.sh
+
+echo "🌐 Teste em Ambiente Real - Sistema Distribuído"
+echo "=============================================="
+
+# Verificar se IPs foram fornecidos
+if [ $# -eq 0 ]; then
+    echo "❌ Nenhum IP fornecido!"
+    echo ""
+    echo "Uso: ./teste_rede_real.sh IP1:porta IP2:porta IP3:porta"
+    echo ""
+    echo "Exemplo:"
+    echo "./teste_rede_real.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345"
+    exit 1
+fi
+
+echo "📋 Testando conectividade com máquinas da rede..."
+for ip_port in "$@"; do
+    if [[ $ip_port == *":"* ]]; then
+        IFS=':' read -r host port <<< "$ip_port"
+        echo "🔍 Testando $host:$port..."
+        
+        if timeout 5 bash -c "</dev/tcp/$host/$port" 2>/dev/null; then
+            echo "✅ Conexão com $host:$port OK!"
+        else
+            echo "❌ Falha na conexão com $host:$port"
+            echo "⚠️  Verifique se o ReceptorServer está rodando nesta máquina"
+        fi
+    fi
+done
+
+echo ""
+echo "🧪 Executando teste distribuído em ambiente real..."
+echo "📊 Logs mostrarão comunicação entre IPs diferentes:"
+echo "   [D] Conectado a 192.168.1.XXX:12345"
+echo "   [R] Pedido recebido do cliente 192.168.1.XXX:XXXXX"
+echo ""
+
+# Executar teste
+java -cp out distributed.Distribuidor "$@" --tam 1000000 --missing
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "🎉 TESTE EM AMBIENTE REAL EXECUTADO COM SUCESSO!"
+    echo "🚀 Sistema funcionando perfeitamente em rede local!"
+    echo "📝 Logs mostram comunicação entre máquinas diferentes"
+else
+    echo ""
+    echo "❌ Falha no teste em ambiente real!"
+    echo "⚠️  Verifique se todos os servidores R estão rodando nas máquinas"
+fi
+```
+
+### **Exemplo Completo de Teste em Rede**
+
+#### **Cenário: 4 computadores na rede local**
+
+**Computador 1 (192.168.1.100):**
+```bash
+cd ppd-java
+javac -d out src/distributed/*.java
+java -cp out distributed.ReceptorServer 0.0.0.0 12345
+```
+
+**Computador 2 (192.168.1.101):**
+```bash
+cd ppd-java
+javac -d out src/distributed/*.java
+java -cp out distributed.ReceptorServer 0.0.0.0 12345
+```
+
+**Computador 3 (192.168.1.102):**
+```bash
+cd ppd-java
+javac -d out src/distributed/*.java
+java -cp out distributed.ReceptorServer 0.0.0.0 12345
+```
+
+**Computador 4 (192.168.1.103) - Executa Distribuidor:**
+```bash
+cd ppd-java
+javac -d out src/distributed/*.java
+./teste_automatico.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345
+```
+
+### **Solução de Problemas em Rede**
+
+#### **Problema: "Connection refused"**
+```bash
+# Verificar se servidores estão rodando
+netstat -an | grep 12345
+
+# Verificar conectividade
+ping 192.168.1.100
+telnet 192.168.1.100 12345
+```
+
+#### **Problema: "IPv4 inválido"**
+```bash
+# Verificar formato correto
+./teste_automatico.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345
+```
+
+#### **Problema: "Falha na compilação"**
+```bash
+# Verificar se está no diretório correto
+cd /Users/rmartins/Desktop/maligno/ppd-java
+ls src/distributed/
+```
+
+### **Vantagens do Teste em Ambiente Real**
+
+- ✅ **Comunicação real entre máquinas** - Logs mostram IPs diferentes
+- ✅ **Teste de rede local** - Simula ambiente de produção
+- ✅ **Distribuição real** - Trabalho dividido entre máquinas físicas
+- ✅ **Demonstração ao professor** - Mostra sistema funcionando em rede
+- ✅ **Logs autênticos** - Exatamente como especificado no documento
+
 ## 📝 Notas Técnicas
 
 - **Serialização**: Todas as classes de comunicação implementam Serializable
