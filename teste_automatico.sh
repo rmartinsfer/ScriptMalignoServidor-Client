@@ -12,6 +12,7 @@ echo ""
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 print_info() {
@@ -24,6 +25,23 @@ print_success() {
 
 print_error() {
     echo -e "${RED}❌ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+# Função para testar conectividade
+test_connection() {
+    local host=$1
+    local port=$2
+    local timeout=5
+    
+    if timeout $timeout bash -c "</dev/tcp/$host/$port" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Função para limpeza
@@ -78,7 +96,7 @@ for ip_port in "$@"; do
             print_info "Iniciando servidor R em $host:$port..."
             java -cp out distributed.ReceptorServer 0.0.0.0 $port > /dev/null 2>&1 &
             servers_started=$((servers_started + 1))
-            sleep 1
+            sleep 2  # Aguardar mais tempo para servidor iniciar
         else
             print_info "IP externo $host:$port - assumindo que servidor R já está rodando"
         fi
@@ -87,11 +105,36 @@ done
 
 if [ $servers_started -gt 0 ]; then
     print_success "$servers_started servidores R iniciados automaticamente!"
-    sleep 2
+    sleep 3  # Aguardar mais tempo para servidores ficarem prontos
 fi
 
-# 4. Teste distribuído
-print_info "4. Testando sistema distribuído..."
+# 4. Teste de conectividade
+print_info "4. Testando conectividade com servidores R..."
+all_connected=true
+
+for ip_port in "$@"; do
+    if [[ $ip_port == *":"* ]]; then
+        IFS=':' read -r host port <<< "$ip_port"
+        print_info "Testando $host:$port..."
+        
+        if test_connection "$host" "$port"; then
+            print_success "Conexão com $host:$port OK!"
+        else
+            print_error "Falha na conexão com $host:$port"
+            print_warning "Verifique se o ReceptorServer está rodando neste IP"
+            all_connected=false
+        fi
+    fi
+done
+
+if [ "$all_connected" = false ]; then
+    print_warning "Alguns servidores não estão respondendo"
+    print_info "Tentando continuar mesmo assim..."
+fi
+echo ""
+
+# 5. Teste distribuído
+print_info "5. Testando sistema distribuído..."
 print_info "IPs fornecidos: $*"
 echo ""
 
@@ -103,8 +146,8 @@ fi
 
 print_success "Teste distribuído OK!"
 
-# 5. Teste com vetor maior
-print_info "5. Testando com vetor maior (100K elementos)..."
+# 6. Teste com vetor maior
+print_info "6. Testando com vetor maior (100K elementos)..."
 if ! java -cp out distributed.Distribuidor "$@" --tam 100000; then
     print_error "Falha no teste com vetor maior!"
     exit 1
