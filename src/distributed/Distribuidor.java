@@ -5,21 +5,14 @@ import java.net.*;
 import java.util.*;
 
 public class Distribuidor {
-    /**
-     * Uso:
-     *   java distributed.Distribuidor host1:porta host2:porta ... [--tam N] [--missing]
-     * Exemplo local (3 R em portas diferentes):
-     *   java distributed.Distribuidor localhost:12345 localhost:12346 localhost:12347 --tam 30000000 --missing
-     */
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
             System.out.println("Forneça ao menos um R no formato host:porta. Opções: --tam N, --missing");
             return;
         }
 
-        // Parse de argumentos
         List<String> destinos = new ArrayList<>();
-        int tamanho = 10_000_000; // padrão
+        int tamanho = 10_000_000;
         boolean missing = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -37,16 +30,14 @@ public class Distribuidor {
             return;
         }
 
-        // Gera vetor e escolhe número procurado
         final Random rnd = new Random();
         int[] vetor = new int[tamanho];
-        for (int i = 0; i < tamanho; i++) vetor[i] = rnd.nextInt(201) - 100; // [-100,100]
+        for (int i = 0; i < tamanho; i++) vetor[i] = rnd.nextInt(201) - 100;
         int pos = rnd.nextInt(tamanho);
         int procurado = vetor[pos];
 
         Log.info("D", "Vetor gerado: " + tamanho + " elementos; alvo escolhido (pos=" + pos + ") = " + procurado);
 
-        // Prepara conexões persistentes (uma por servidor)
         List<Connection> conns = new ArrayList<>();
         for (String alvo : destinos) {
             String[] hp = alvo.split(":");
@@ -54,13 +45,10 @@ public class Distribuidor {
         }
         for (Connection c : conns) c.connect();
 
-        // Rodada 1: número existente
         executarRodada("EXISTENTE", conns, vetor, procurado);
 
-        // Rodada 2 (opcional): número inexistente 111
         if (missing) executarRodada("INEXISTENTE", conns, vetor, 111);
 
-        // Envia encerramento e fecha
         for (Connection c : conns) {
             try { c.sendEncerramento(); } catch (Exception e) { Log.error("D", "Falha ao encerrar " + c, e); }
             c.close();
@@ -72,7 +60,7 @@ public class Distribuidor {
         Log.info("D", "— Rodada " + rotulo + " — alvo=" + procurado);
 
         int partes = conns.size();
-        int bloco = (vetor.length + partes - 1) / partes; // ceiling
+        int bloco = (vetor.length + partes - 1) / partes;
 
         final int[] parciais = new int[partes];
         Thread[] threads = new Thread[partes];
@@ -98,7 +86,6 @@ public class Distribuidor {
             threads[i].start();
         }
 
-        // Sincronização usando Thread.join() conforme especificado
         for (Thread t : threads) {
             try { t.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
@@ -109,7 +96,6 @@ public class Distribuidor {
 
         Log.info("D", String.format("TOTAL (%s): %d ocorrências. Tempo distribuído: %.2f ms", rotulo, total, ms));
 
-        // Comparação sequencial local para a mesma rodada
         long iniSeq = System.nanoTime();
         int totalSeq = 0; for (int x : vetor) if (x == procurado) totalSeq++;
         long fimSeq = System.nanoTime();
@@ -117,7 +103,6 @@ public class Distribuidor {
         Log.info("D", String.format("Tempo sequencial local: %.2f ms (resultado=%d)", msSeq, totalSeq));
     }
 
-    // Conexão persistente com um servidor R
     private static class Connection {
         private final String host;
         private final int porta;
@@ -137,7 +122,7 @@ public class Distribuidor {
         }
 
         Resposta sendPedido(Pedido p) throws IOException, ClassNotFoundException {
-            synchronized (this) { // garante ordem pedido-resposta por conexão
+            synchronized (this) {
                 out.writeObject(p);
                 out.flush();
                 Object resp = in.readObject();

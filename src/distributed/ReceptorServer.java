@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.*;
 
 public class ReceptorServer {
-    // Uso: java distributed.ReceptorServer [host=0.0.0.0] [porta=12345]
     public static void main(String[] args) {
         String hostBind = args.length > 0 ? args[0] : "0.0.0.0";
         int porta = args.length > 1 ? Integer.parseInt(args[1]) : 12345;
@@ -43,7 +42,7 @@ public class ReceptorServer {
                         transmissor.flush();
                     } else if (obj instanceof ComunicadoEncerramento) {
                         Log.warn("R", "Encerramento recebido de " + socket.getRemoteSocketAddress());
-                        break; // encerra a conexão e volta a aceitar outra
+                        break;
                     } else if (obj instanceof Comunicado) {
                         Log.warn("R", "Comunicado desconhecido: " + obj.getClass().getSimpleName());
                     } else {

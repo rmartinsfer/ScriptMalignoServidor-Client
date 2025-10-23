@@ -5,17 +5,16 @@ public class MaiorVetorAproximado {
        System.out.println("Estimando o maior tamanho possível de vetor em Java...");
        long inicio = System.currentTimeMillis();
 
-       int tamanho = 1_000_000;  // começa com 1 milhão
+       int tamanho = 1_000_000;
        int ultimoBemSucedido = 0;
 
        while (true) {
            try {
                byte[] vetor = new byte[tamanho];
                ultimoBemSucedido = tamanho;
-               vetor = null;  // libera
+               vetor = null;
                System.gc();
 
-               // aumenta o tamanho em 50% para a próxima tentativa
                if (tamanho > Integer.MAX_VALUE / 3 * 2) break;
 
                tamanho = (tamanho / 2) * 3;
@@ -33,4 +32,3 @@ public class MaiorVetorAproximado {
        System.out.printf("Tempo total: %.2f segundos%n", (fim - inicio) / 1000.0);
    }
 }
-// Exemplo: java -Xmx8G distributed.MaiorVetorAproximado

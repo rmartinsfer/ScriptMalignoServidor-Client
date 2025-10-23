@@ -18,9 +18,6 @@ public class Pedido extends Comunicado implements Serializable {
     public int getProcurado() { return procurado; }
     public int[] getNumeros() { return numeros; }
 
-    /**
-     * Conta ocorrências de forma paralela, respeitando o número de processadores disponíveis.
-     */
     public int contar() {
         final int n = numeros.length;
         if (n == 0) return 0;
@@ -30,7 +27,7 @@ public class Pedido extends Comunicado implements Serializable {
         final LongAdder soma = new LongAdder();
 
         ExecutorService pool = Executors.newFixedThreadPool(tarefas);
-        int bloco = (n + tarefas - 1) / tarefas; // ceiling
+        int bloco = (n + tarefas - 1) / tarefas;
 
         for (int t = 0; t < tarefas; t++) {
             final int inicio = t * bloco;

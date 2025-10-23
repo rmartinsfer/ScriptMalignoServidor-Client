@@ -3,9 +3,6 @@ package distributed;
 import java.util.Random;
 
 public class ContagemSequencial {
-    /**
-     * Uso: java distributed.ContagemSequencial [tamanho=10000000] [--missing]
-     */
     public static void main(String[] args) {
         int tamanho = 10_000_000;
         boolean missing = false;
