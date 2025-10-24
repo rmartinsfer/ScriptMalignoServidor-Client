@@ -10,14 +10,6 @@ Este sistema conta quantas vezes um número aparece em um vetor grande. A difere
 2. **Servidores R**: São programas que fazem a contagem em paralelo
 3. **ContagemSequencial**: Versão normal para comparar
 
-## Arquivos principais
-
-- `Distribuidor.java` - Programa principal
-- `ReceptorServer.java` - Servidor que faz a contagem
-- `ContagemSequencial.java` - Versão normal para comparar
-- `Pedido.java` - Classe que manda os dados
-- `Resposta.java` - Classe que retorna o resultado
-
 ## Como usar
 
 ### Teste local (na mesma máquina):
@@ -33,6 +25,14 @@ java -cp out distributed.ReceptorServer 0.0.0.0 12345
 # Em uma máquina:
 ./teste_automatico.sh 192.168.1.100:12345 192.168.1.101:12345 192.168.1.102:12345
 ```
+
+## Arquivos principais
+
+- `Distribuidor.java` - Programa principal
+- `ReceptorServer.java` - Servidor que faz a contagem
+- `ContagemSequencial.java` - Versão normal para comparar
+- `Pedido.java` - Classe que manda os dados
+- `Resposta.java` - Classe que retorna o resultado
 
 ## Compilar e executar
 

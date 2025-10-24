@@ -4,8 +4,9 @@ import java.util.Random;
 
 public class ContagemSequencial {
     public static void main(String[] args) {
-        int tamanho = 10_000_000;
+        int tamanho = 10_000_000; // padrão
         boolean missing = false;
+        // parse simples dos args
         for (int i = 0; i < args.length; i++) {
             if ("--missing".equals(args[i])) missing = true;
             else tamanho = Integer.parseInt(args[i]);
@@ -13,9 +14,9 @@ public class ContagemSequencial {
 
         Random rnd = new Random();
         int[] v = new int[tamanho];
-        for (int i = 0; i < tamanho; i++) v[i] = rnd.nextInt(201) - 100;
+        for (int i = 0; i < tamanho; i++) v[i] = rnd.nextInt(201) - 100; // -100 a 100
         int pos = rnd.nextInt(tamanho);
-        int procurado = v[pos];
+        int procurado = v[pos]; // escolher um que existe
 
         Log.info("SEQ", "Rodada EXISTENTE — procurando " + procurado);
         medir(v, procurado);
@@ -28,7 +29,7 @@ public class ContagemSequencial {
 
     private static void medir(int[] v, int alvo) {
         long ini = System.nanoTime();
-        int c = 0; for (int x : v) if (x == alvo) c++;
+        int c = 0; for (int x : v) if (x == alvo) c++; // contagem simples
         long fim = System.nanoTime();
         Log.info("SEQ", String.format("Resultado=%d, Tempo=%.2f ms", c, (fim-ini)/1_000_000.0));
     }

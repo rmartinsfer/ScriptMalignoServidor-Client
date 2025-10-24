@@ -5,8 +5,8 @@ import java.net.*;
 
 public class ReceptorServer {
     public static void main(String[] args) {
-        String hostBind = args.length > 0 ? args[0] : "0.0.0.0";
-        int porta = args.length > 1 ? Integer.parseInt(args[1]) : 12345;
+        String hostBind = args.length > 0 ? args[0] : "0.0.0.0"; // padrão
+        int porta = args.length > 1 ? Integer.parseInt(args[1]) : 12345; // padrão
 
         try (ServerSocket servidor = new ServerSocket()) {
             servidor.bind(new InetSocketAddress(hostBind, porta));
@@ -15,7 +15,7 @@ public class ReceptorServer {
             while (true) {
                 Socket conexao = servidor.accept();
                 Log.info("R", "Conexão aceita de " + conexao.getRemoteSocketAddress());
-                new Thread(new Atendedor(conexao)).start();
+                new Thread(new Atendedor(conexao)).start(); // uma thread por cliente
             }
         } catch (IOException e) {
             Log.error("R", "Falha ao iniciar servidor", e);
@@ -37,7 +37,7 @@ public class ReceptorServer {
                         Pedido p = (Pedido) obj;
                         Log.info("R", "Pedido recebido de " + socket.getRemoteSocketAddress() +
                                 " — procurando: " + p.getProcurado() + ", tamanho: " + p.getNumeros().length);
-                        int cont = p.contar();
+                        int cont = p.contar(); // processar em paralelo
                         transmissor.writeObject(new Resposta(cont));
                         transmissor.flush();
                     } else if (obj instanceof ComunicadoEncerramento) {

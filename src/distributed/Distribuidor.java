@@ -11,8 +11,9 @@ public class Distribuidor {
             return;
         }
 
+        // Parse dos argumentos - pode ter melhorias aqui
         List<String> destinos = new ArrayList<>();
-        int tamanho = 10_000_000;
+        int tamanho = 10_000_000; // tamanho padrão
         boolean missing = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -30,25 +31,28 @@ public class Distribuidor {
             return;
         }
 
+        // Gerar vetor aleatório
         final Random rnd = new Random();
         int[] vetor = new int[tamanho];
-        for (int i = 0; i < tamanho; i++) vetor[i] = rnd.nextInt(201) - 100;
+        for (int i = 0; i < tamanho; i++) vetor[i] = rnd.nextInt(201) - 100; // -100 a 100
         int pos = rnd.nextInt(tamanho);
-        int procurado = vetor[pos];
+        int procurado = vetor[pos]; // escolher um número que existe no vetor
 
         Log.info("D", "Vetor gerado: " + tamanho + " elementos; alvo escolhido (pos=" + pos + ") = " + procurado);
 
+        // Criar conexões com servidores R
         List<Connection> conns = new ArrayList<>();
         for (String alvo : destinos) {
             String[] hp = alvo.split(":");
             conns.add(new Connection(hp[0], Integer.parseInt(hp[1])));
         }
-        for (Connection c : conns) c.connect();
+        for (Connection c : conns) c.connect(); // conectar a todos
 
         executarRodada("EXISTENTE", conns, vetor, procurado);
 
         if (missing) executarRodada("INEXISTENTE", conns, vetor, 111);
 
+        // encerrar conexões
         for (Connection c : conns) {
             try { c.sendEncerramento(); } catch (Exception e) { Log.error("D", "Falha ao encerrar " + c, e); }
             c.close();
@@ -59,13 +63,14 @@ public class Distribuidor {
     private static void executarRodada(String rotulo, List<Connection> conns, int[] vetor, int procurado) throws Exception {
         Log.info("D", "— Rodada " + rotulo + " — alvo=" + procurado);
 
+        // Dividir vetor entre servidores
         int partes = conns.size();
-        int bloco = (vetor.length + partes - 1) / partes;
+        int bloco = (vetor.length + partes - 1) / partes; // arredondar para cima
 
         final int[] parciais = new int[partes];
         Thread[] threads = new Thread[partes];
 
-        long ini = System.nanoTime();
+        long ini = System.nanoTime(); // medir tempo
 
         for (int idx = 0; idx < partes; idx++) {
             final int i = idx;
@@ -91,11 +96,12 @@ public class Distribuidor {
         }
         long fim = System.nanoTime();
 
-        int total = 0; for (int v : parciais) total += v;
-        double ms = (fim - ini) / 1_000_000.0;
+        int total = 0; for (int v : parciais) total += v; // somar parciais
+        double ms = (fim - ini) / 1_000_000.0; // converter para ms
 
         Log.info("D", String.format("TOTAL (%s): %d ocorrências. Tempo distribuído: %.2f ms", rotulo, total, ms));
 
+        // comparar com versão sequencial
         long iniSeq = System.nanoTime();
         int totalSeq = 0; for (int x : vetor) if (x == procurado) totalSeq++;
         long fimSeq = System.nanoTime();
@@ -114,8 +120,8 @@ public class Distribuidor {
 
         void connect() throws IOException {
             s = new Socket();
-            s.connect(new InetSocketAddress(host, porta), 30_000);
-            s.setTcpNoDelay(true);
+            s.connect(new InetSocketAddress(host, porta), 30_000); // timeout 30s
+            s.setTcpNoDelay(true); // melhor performance
             out = new ObjectOutputStream(s.getOutputStream());
             in  = new ObjectInputStream(s.getInputStream());
             Log.info("D", "Conectado a " + this);

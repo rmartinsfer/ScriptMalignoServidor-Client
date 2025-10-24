@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 public final class Log {
     private static final DateTimeFormatter F = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private Log() {}
+    private Log() {} // classe utilitária
 
     public static void info(String tag, String msg) {
         System.out.printf("[%s] %s — %s%n", tag, LocalDateTime.now().format(F), msg);
@@ -15,6 +15,6 @@ public final class Log {
     }
     public static void error(String tag, String msg, Throwable t) {
         System.out.printf("[%s][ERRO] %s — %s%n", tag, LocalDateTime.now().format(F), msg);
-        if (t != null) t.printStackTrace(System.out);
+        if (t != null) t.printStackTrace(System.out); // stack trace completo
     }
 }

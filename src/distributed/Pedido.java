@@ -20,31 +20,32 @@ public class Pedido extends Comunicado implements Serializable {
 
     public int contar() {
         final int n = numeros.length;
-        if (n == 0) return 0;
+        if (n == 0) return 0; // edge case
 
+        // usar todos os cores disponíveis
         final int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
-        final int tarefas = Math.min(cores, n);
-        final LongAdder soma = new LongAdder();
+        final int tarefas = Math.min(cores, n); // não mais tarefas que elementos
+        final LongAdder soma = new LongAdder(); // thread-safe
 
         ExecutorService pool = Executors.newFixedThreadPool(tarefas);
-        int bloco = (n + tarefas - 1) / tarefas;
+        int bloco = (n + tarefas - 1) / tarefas; // dividir igualmente
 
         for (int t = 0; t < tarefas; t++) {
             final int inicio = t * bloco;
             final int fim = Math.min(n, inicio + bloco);
-            if (inicio >= fim) break;
+            if (inicio >= fim) break; // evitar tarefas vazias
             pool.execute(() -> {
                 int c = 0;
                 for (int i = inicio; i < fim; i++) {
-                    if (numeros[i] == procurado) c++;
+                    if (numeros[i] == procurado) c++; // contagem local
                 }
-                soma.add(c);
+                soma.add(c); // somar ao total
             });
         }
 
         pool.shutdown();
         try {
-            pool.awaitTermination(365, TimeUnit.DAYS);
+            pool.awaitTermination(365, TimeUnit.DAYS); // esperar indefinidamente
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
